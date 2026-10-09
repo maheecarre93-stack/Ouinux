@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ouinux</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --text: #1d2129; --muted: #667085; --border: #e2e5ea;
+    --accent: #2f6fed; --linux: #1f9d55; --windows: #2f6fed; --unknown: #8a8f98;
+    --linux-bg: #e7f6ee; --windows-bg: #e8effd; --unknown-bg: #eef0f3; --hover: #eef2fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c; --panel: #1e2128; --text: #e6e8ec; --muted: #9aa1ad; --border: #2c3039;
+      --accent: #3b7bf5; --linux: #3ecf7f; --windows: #6b9bff; --unknown: #9aa1ad;
+      --linux-bg: #173325; --windows-bg: #1b2842; --unknown-bg: #262a31; --hover: #262c38;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Segoe UI", "Noto Sans", sans-serif;
+         display: flex; flex-direction: column; }
+  header { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0 0 2px; }
+  #pc { color: var(--muted); font-size: 13px; min-height: 20px; }
+  .recherche { position: relative; max-width: 760px; margin: 12px auto 0; }
+  #q { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
+       border-radius: 12px; padding: 10px 14px; outline: none; }
+  #q:focus { border-color: var(--accent); }
+  #liste { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10; background: var(--panel);
+           border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: none;
+           box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  #liste.ouverte { display: block; }
+  .sugg { display: flex; align-items: center; gap: 10px; padding: 7px 12px; cursor: pointer; }
+  .sugg.actif, .sugg:hover { background: var(--hover); }
+  .sugg img, .sugg .vide { width: 92px; height: 34px; object-fit: cover; border-radius: 4px; background: var(--bg); flex: none; }
+  .sugg span { font-size: 14px; flex: 1; }
+  .sugg small { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 99px; padding: 0 8px; }
+  main { flex: 1; overflow-y: auto; padding: 16px; }
+  .col { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  .accueil { color: var(--muted); text-align: center; margin-top: 6vh; }
+  .accueil button { margin: 4px; }
+  button { font: inherit; border: 1px solid var(--border); background: var(--panel); color: var(--text);
+           border-radius: 12px; padding: 7px 14px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .attente { color: var(--muted); font-style: italic; text-align: center; }
+  .erreur { color: #d64545; text-align: center; }
+  .carte { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+           border-left: 4px solid var(--c); position: relative; }
+  .carte .banniere { width: 100%; aspect-ratio: 460 / 215; object-fit: cover; display: block; max-height: 150px; }
+  .carte .corps { padding: 12px 16px 14px; }
+  .carte h3 { margin: 0 0 6px; font-size: 16px; padding-right: 28px; }
+  .fermer { position: absolute; top: 8px; right: 8px; border: 0; background: rgba(0,0,0,.45); color: #fff;
+            width: 26px; height: 26px; padding: 0; border-radius: 50%; font-size: 14px; line-height: 26px; }
+  .badge { display: inline-block; font-weight: 600; font-size: 13px; padding: 2px 10px; border-radius: 99px;
+           background: var(--cbg); color: var(--c); }
+  .conf { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .carte ul { margin: 8px 0 6px; padding-left: 18px; font-size: 13px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .carte a { color: var(--c); font-size: 12px; margin-right: 12px; }
+  .perf { margin: 10px 0 8px; }
+  .perf .titre { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .jauge { position: relative; height: 10px; border-radius: 99px; margin: 5px 0;
+           background: linear-gradient(90deg, var(--windows-bg), var(--bg) 50%, var(--linux-bg)); border: 1px solid var(--border); }
+  .jauge .zero { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+  .jauge .marge { position: absolute; top: 1px; bottom: 1px; border-radius: 99px; opacity: .45; }
+  .jauge .point { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
+                  transform: translate(-50%, -50%); border: 2px solid var(--panel); }
+  .res { font-size: 13px; font-weight: 600; }
+  .det { font-size: 12px; color: var(--muted); }
+  .pc { margin: 10px 0 8px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .pc .entete { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pc .entete b { font-size: 13px; }
+  .choix { display: inline-flex; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; }
+  .choix button { border: 0; border-radius: 0; padding: 3px 12px; font-size: 12px; background: transparent; }
+  .choix button.actif { background: var(--c2); color: #fff; font-weight: 600; }
+  .choix button:disabled { opacity: .35; }
+  .niv { position: relative; height: 10px; border-radius: 99px; margin: 10px 0 4px;
+         background: linear-gradient(90deg, #d64545 0%, #e8833a 20%, #e6c229 42%, #7cc35a 62%, #2fa866 100%); opacity: .85; }
+  .niv .point { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; background: var(--text);
+                border: 3px solid var(--panel); transform: translate(-50%, -50%); transition: left .35s ease; }
+  .niv-lab { position: relative; height: 15px; font-size: 11px; color: var(--muted); }
+  .niv-lab span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .niv-lab span:first-child { transform: none; } .niv-lab span:last-child { transform: translateX(-100%); }
+  .pc ul { list-style: none; padding: 0; margin: 6px 0 4px; font-size: 12px; }
+  .Linux { --c: var(--linux); --cbg: var(--linux-bg); }
+  .Windows { --c: var(--windows); --cbg: var(--windows-bg); }
+  .Inconnu { --c: var(--unknown); --cbg: var(--unknown-bg); }
+  footer { text-align: center; color: var(--muted); font-size: 11px; padding: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="col" style="gap:0">
+    <h1>🎮 Ouinux</h1>
+    <div id="pc" data-t>Detecting your PC…</div>
+  </div>
+  <div class="recherche">
+    <input id="q" type="text" placeholder="Search a game: Steam, Battle.net, Epic, Ubisoft, EA…" data-t-placeholder autocomplete="off" autofocus>
+    <div id="liste" role="listbox"></div>
+  </div>
+</header>
+<main><div class="col" id="col">
+  <div class="accueil" id="accueil">
+    <p data-t>Type a game's name: I'll tell you whether it works on Linux or if you should stay on Windows, and how your PC will handle it.</p>
+    <button data-nom="Elden Ring" data-appid="1245620">Elden Ring</button>
+    <button data-nom="Valorant">Valorant</button>
+    <button data-nom="Baldur's Gate 3" data-appid="1086940">Baldur's Gate 3</button>
+    <button data-nom="Counter-Strike 2" data-appid="730">Counter-Strike 2</button>
+    <button data-nom="World of Warcraft" data-slug="world-of-warcraft">World of Warcraft</button>
+  </div>
+</div></main>
+<footer id="pied" data-t>Data: ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimates, not measurements</footer>
+<script>
+const col = document.getElementById('col'), q = document.getElementById('q'), liste = document.getElementById('liste');
+let PC = null, suggs = [], actif = -1, minuteur = null, requete = 0;
+
+// ---------- Langue : textes en anglais, traduits si la langue du système en a une ----------
+const LANGUES = { fr: {
+  'Detecting your PC…': 'Détection de ton PC…',
+  'Search a game: Steam, Battle.net, Epic, Ubisoft, EA…': 'Cherche un jeu : Steam, Battle.net, Epic, Ubisoft, EA…',
+  "Type a game's name: I'll tell you whether it works on Linux or if you should stay on Windows, and how your PC will handle it.":
+    "Tape le nom d'un jeu : je te dis s'il fonctionne sous Linux ou s'il faut rester sur Windows, et comment ton PC s'en sortira.",
+  'Data: ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimates, not measurements':
+    'Données : ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimations, pas des mesures',
+  'Hardware not detected': 'Matériel non détecté',
+  '{nom}: {texte}': '{nom} : {texte}',
+  'Unknown processor': 'Processeur inconnu', 'Unknown graphics card': 'Carte graphique inconnue',
+  'Checking {nom}: anti-cheat, ProtonDB, Steam requirements…': 'Je vérifie {nom} : anti-triche, ProtonDB, configuration Steam…',
+  "⚠️ Couldn't analyse {nom}: {err}. Check your Internet connection.": "⚠️ Impossible d'analyser {nom} : {err}. Vérifie ta connexion Internet.",
+  'estimated performance': 'perfs estimées',
+  'Estimate: {n}% for Linux (range {bas} to +{haut}%)': 'Estimation : {n} % pour Linux (marge {bas} à +{haut} %)',
+  'PCGamingWiki source ↗': 'Source PCGamingWiki ↗',
+  '🎯 Your PC for this game': '🎯 Ton PC pour ce jeu',
+  'below min': 'sous le min', 'minimum': 'minimum', 'recommended': 'recommandé', 'above': 'au-dessus',
+  "Rough estimate: your setup compared with the game's Steam requirements.":
+    'Approximation : ta config comparée à celle demandée par le jeu sur Steam.',
+  "Won't launch on Linux (anti-cheat)": 'Ne se lance pas sous Linux (anti-triche)',
+  'Limiting factor: ': 'Facteur limitant : ',
+  '🐧 Works on Linux': '🐧 Fonctionne sous Linux', '🪟 Windows required': '🪟 Windows nécessaire', '❓ Unknown': '❓ Inconnu',
+  'Remove': 'Retirer',
+  'confidence {c}': 'confiance {c}', 'high': 'haute', 'medium': 'moyenne', 'low': 'basse',
+  '📊 Performance preview unavailable': '📊 Aperçu des perfs non disponible',
+  "Online play won't launch on Linux (anti-cheat), so no comparison is possible.":
+    'Le jeu en ligne ne se lance pas sous Linux (anti-triche), donc pas de comparaison possible.',
+  "The game's graphics API is unknown (no PCGamingWiki page). It doesn't change the verdict.":
+    'Technologie graphique du jeu inconnue (pas de fiche PCGamingWiki). Ça ne change rien au verdict.',
+  'Analyse "{s}"': 'Analyser « {s} »',
+  'ProtonDB {tier} ({n} reports)': 'ProtonDB {tier} ({n} avis)',
+  'Steam Deck: {d}': 'Steam Deck : {d}', 'Anti-cheat: {s}': 'Anti-triche : {s}',
+  'verified': 'vérifié', 'playable': 'jouable', 'unsupported': 'non supporté',
+  '🛒 Available on: ': '🛒 Disponible sur : ',
+  'View on Lutris ↗': 'Voir sur Lutris ↗', 'View on ProtonDB ↗': 'Voir sur ProtonDB ↗',
+} };
+const LANG = (navigator.language || 'en').slice(0, 2).toLowerCase() in LANGUES
+  ? (navigator.language || 'en').slice(0, 2).toLowerCase() : 'en';
+function t(texte, valeurs = {}) {
+  const tr = (LANGUES[LANG] || {})[texte] ?? texte;
+  return tr.replace(/\{(\w+)\}/g, (m, k) => k in valeurs ? valeurs[k] : m);
+}
+document.documentElement.lang = LANG;
+document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.textContent.trim()); });
+document.querySelectorAll('[data-t-placeholder]').forEach(e => { e.placeholder = t(e.placeholder); });
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+fetch('/api/pc').then(r => r.json()).then(pc => {
+  PC = pc;
+  const ram = pc.ram_go ? ` · ${pc.ram_go} ${LANG === 'fr' ? 'Go' : 'GB'} RAM` : '';
+  document.getElementById('pc').textContent = `${{ windows: '🪟', macos: '🍎' }[pc.os] || '🐧'} ${pc.os_nom} · ${t(pc.cpu)} · ${t(pc.gpu)}${ram}`;
+  document.getElementById('pied').textContent += ` · v${pc.version}`;
+}).catch(() => { document.getElementById('pc').textContent = t('Hardware not detected'); });
+
+// ---------- Recherche avec suggestions ----------
+function fermerListe() { liste.classList.remove('ouverte'); actif = -1; }
+
+function afficherListe() {
+  liste.replaceChildren();
+  suggs.forEach((s, i) => {
+    const d = el('div', 'sugg' + (i === actif ? ' actif' : ''));
+    if (s.image) { const im = el('img'); im.src = s.image; im.alt = ''; d.appendChild(im); } else d.appendChild(el('div', 'vide'));
+    d.appendChild(el('span', null, s.nom));
+    if (s.source) d.appendChild(el('small', null, s.source));
+    d.onmousedown = e => { e.preventDefault(); choisir(s); };
+    liste.appendChild(d);
+  });
+  liste.classList.toggle('ouverte', suggs.length > 0);
+}
+
+q.addEventListener('input', () => {
+  clearTimeout(minuteur);
+  const texte = q.value.trim();
+  if (texte.length < 2) { suggs = []; fermerListe(); return; }
+  minuteur = setTimeout(async () => {
+    const n = ++requete;
+    try {
+      const r = await (await fetch('/api/suggestions?lang=' + LANG + '&q=' + encodeURIComponent(texte))).json();
+      if (n !== requete) return;  // une frappe plus récente a déjà répondu
+      suggs = r; actif = -1; afficherListe();
+    } catch { /* hors ligne : pas de suggestions */ }
+  }, 250);
+});
+
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' && suggs.length) { actif = (actif + 1) % suggs.length; afficherListe(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp' && suggs.length) { actif = (actif - 1 + suggs.length) % suggs.length; afficherListe(); e.preventDefault(); }
+  else if (e.key === 'Escape') fermerListe();
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (actif >= 0) choisir(suggs[actif]);
+    else if (q.value.trim()) choisir({ nom: q.value.trim(), appid: null, slug: null });
+  }
+});
+q.addEventListener('blur', () => setTimeout(fermerListe, 100));
+
+function choisir(s) {
+  q.value = ''; suggs = []; fermerListe(); clearTimeout(minuteur); requete++;
+  analyser(s.nom, s.appid, s.slug);
+}
+
+// ---------- Analyse ----------
+async function analyser(nom, appid, slug) {
+  document.getElementById('accueil')?.remove();
+  const att = el('div', 'attente', t('Checking {nom}: anti-cheat, ProtonDB, Steam requirements…', { nom }));
+  col.prepend(att);
+  try {
+    const url = '/api/analyse?lang=' + LANG + '&nom=' + encodeURIComponent(nom) + (appid ? '&appid=' + appid : '')
+              + (slug ? '&slug=' + encodeURIComponent(slug) : '');
+    const r = await fetch(url); const a = await r.json();
+    if (!r.ok) throw new Error(a.erreur || r.statusText);
+    att.replaceWith(carte(a));
+  } catch (e) {
+    att.replaceWith(el('div', 'erreur', t("⚠️ Couldn't analyse {nom}: {err}. Check your Internet connection.", { nom, err: e.message })));
+  }
+  document.querySelector('main').scrollTop = 0;
+}
+
+function jauge(p) {
+  // échelle : -25 % (Windows plus fluide, à gauche) … +25 % (Linux plus fluide, à droite)
+  const pos = v => Math.max(0, Math.min(100, 50 + v * 2)) + '%';
+  const couleur = v => v > 5 ? 'var(--linux)' : v < -5 ? 'var(--windows)' : 'var(--muted)';
+  const w = el('div', 'perf');
+  const ti = el('div', 'titre'); ti.append(el('span', null, '🪟 Windows'), el('span', null, t('estimated performance')), el('span', null, 'Linux 🐧'));
+  w.appendChild(ti);
+  const j = el('div', 'jauge'); j.appendChild(el('div', 'zero'));
+  const m = el('div', 'marge'); m.style.left = pos(p.bas); m.style.right = (100 - parseFloat(pos(p.haut))) + '%';
+  m.style.background = couleur(p.centre); j.appendChild(m);
+  const pt = el('div', 'point'); pt.style.left = pos(p.centre); pt.style.background = couleur(p.centre); j.appendChild(pt);
+  j.title = t('Estimate: {n}% for Linux (range {bas} to +{haut}%)', { n: (p.centre > 0 ? '+' : '') + p.centre, bas: p.bas, haut: p.haut }).replace('+-', '-');
+  w.appendChild(j);
+  w.append(el('div', 'res', p.resume), el('div', 'det', p.explication));
+  if (p.conseil) w.appendChild(el('div', 'det', '💡 ' + p.conseil));
+  if (p.rt) w.appendChild(el('div', 'det', '✨ ' + p.rt));
+  const src = el('a', null, t('PCGamingWiki source ↗')); src.href = p.source; src.target = '_blank'; src.style.color = 'var(--muted)';
+  w.appendChild(src);
+  return w;
+}
+
+function tonPc(m) {
+  const w = el('div', 'pc');
+  const ent = el('div', 'entete'); ent.appendChild(el('b', null, t('🎯 Your PC for this game')));
+  const choix = el('div', 'choix');
+  const bL = el('button', null, '🐧 Linux'), bW = el('button', null, '🪟 Windows');
+  bL.type = bW.type = 'button'; choix.append(bL, bW); ent.appendChild(choix); w.appendChild(ent);
+  const niv = el('div', 'niv'), pt = el('div', 'point'); niv.appendChild(pt); w.appendChild(niv);
+  const lab = el('div', 'niv-lab');
+  [['below min', 0], ['minimum', 25], ['recommended', 60], ['above', 100]].forEach(([s, x]) => {
+    const e = el('span', null, t(s)); e.style.left = x + '%'; lab.appendChild(e); });
+  w.appendChild(lab);
+  const res = el('div', 'res'), txt = el('div', 'det'), lim = el('div', 'det');
+  w.append(res, txt, lim);
+  if (m.note) w.appendChild(el('div', 'det', 'ℹ️ ' + m.note));
+  const ul = el('ul'); m.details.forEach(d => ul.appendChild(el('li', null, `${d.etat} ` + t('{nom}: {texte}', d)))); w.appendChild(ul);
+  w.appendChild(el('div', 'det', t("Rough estimate: your setup compared with the game's Steam requirements.")));
+  function montrer(os) {
+    const v = m[os];
+    bL.classList.toggle('actif', os === 'linux'); bW.classList.toggle('actif', os === 'windows');
+    w.style.setProperty('--c2', os === 'linux' ? 'var(--linux)' : 'var(--windows)');
+    if (!v) { pt.style.left = '2%'; res.textContent = t("Won't launch on Linux (anti-cheat)"); txt.textContent = ''; lim.textContent = ''; return; }
+    pt.style.left = v.position + '%';
+    res.textContent = v.niveau; txt.textContent = v.texte; lim.textContent = t('Limiting factor: ') + v.limite;
+  }
+  bL.onclick = () => montrer('linux'); bW.onclick = () => montrer('windows');
+  if (!m.linux) bL.disabled = true;
+  // par défaut : le système sur lequel l'utilisateur est en ce moment
+  montrer(m.linux && PC && PC.os === 'linux' ? 'linux' : 'windows');
+  return w;
+}
+
+const BADGES = { Linux: '🐧 Works on Linux', Windows: '🪟 Windows required', Inconnu: '❓ Unknown' };
+
+function carte(a) {
+  const c = el('div', 'carte ' + a.verdict);
+  const x = el('button', 'fermer', '✕'); x.title = t('Remove'); x.onclick = () => c.remove(); c.appendChild(x);
+  if (a.image) { const im = el('img', 'banniere'); im.src = a.image; im.alt = ''; c.appendChild(im); }
+  const corps = el('div', 'corps'); c.appendChild(corps);
+  corps.appendChild(el('h3', null, a.jeu));
+  const l = el('div'); l.appendChild(el('span', 'badge', t(BADGES[a.verdict])));
+  l.appendChild(el('span', 'conf', t('confidence {c}', { c: t({ haute: 'high', moyenne: 'medium', basse: 'low' }[a.confiance] || a.confiance) }))); corps.appendChild(l);
+  const bloque = a.anticheat && ['Denied', 'Broken'].includes(a.anticheat.statut);
+  if (a.verdict !== 'Inconnu') {
+    if (a.perf && !bloque) corps.appendChild(jauge(a.perf));
+    else {
+      const w = el('div', 'perf');
+      w.appendChild(el('div', 'titre', t('📊 Performance preview unavailable')));
+      w.appendChild(el('div', 'det', bloque
+        ? t("Online play won't launch on Linux (anti-cheat), so no comparison is possible.")
+        : t("The game's graphics API is unknown (no PCGamingWiki page). It doesn't change the verdict.")));
+      corps.appendChild(w);
+    }
+    if (a.materiel) corps.appendChild(tonPc(a.materiel));
+  }
+  const ul = el('ul'); a.raisons.forEach(r => ul.appendChild(el('li', null, r))); corps.appendChild(ul);
+  if (a.suggestion) {
+    const b = el('button', null, t('Analyse "{s}"', { s: a.suggestion }));
+    b.onclick = () => { c.remove(); analyser(a.suggestion, null); };
+    corps.appendChild(b);
+  }
+  const m = [];
+  if (a.protondb) m.push(t('ProtonDB {tier} ({n} reports)', { tier: a.protondb.tier, n: a.protondb.total }));
+  if (a.steam_deck && a.steam_deck !== 'unknown') m.push(t('Steam Deck: {d}', { d: t(a.steam_deck) }));
+  if (a.anticheat) m.push(t('Anti-cheat: {s}', { s: a.anticheat.statut }));
+  if (m.length) corps.appendChild(el('div', 'meta', m.join(' · ')));
+  if (a.plateformes && a.plateformes.length) corps.appendChild(el('div', 'meta', t('🛒 Available on: ') + a.plateformes.join(', ')));
+  a.liens.forEach(u => {
+    const x = el('a', null, t(u.includes('lutris.net') ? 'View on Lutris ↗' : 'View on ProtonDB ↗'));
+    x.href = u; x.target = '_blank'; corps.appendChild(x); });
+  return c;
+}
+
+// Signe de vie pour le serveur : sans fenêtre dédiée (mode navigateur), l'app s'arrête quand l'onglet est fermé
+fetch('/api/ping'); setInterval(() => fetch('/api/ping').catch(() => {}), 20000);
+addEventListener('pagehide', () => navigator.sendBeacon('/api/quitter'));
+
+document.querySelectorAll('[data-nom]').forEach(b =>
+  b.addEventListener('click', () => analyser(b.dataset.nom, b.dataset.appid ? +b.dataset.appid : null, b.dataset.slug)));
+</script>
+</body>
+</html>

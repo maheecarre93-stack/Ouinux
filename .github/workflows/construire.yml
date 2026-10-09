@@ -1,0 +1,64 @@
+# Construit Ouinux pour Windows, Linux et macOS.
+# - à chaque push : fichiers téléchargeables dans l'onglet Actions (« Artifacts »)
+# - pour une tag vX.Y.Z (git tag v0.2.0 && git push --tags) : publiés dans une Release GitHub
+name: Construire
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  construire:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            fichier: Ouinux-Windows.exe
+          - os: ubuntu-22.04  # glibc assez ancienne pour tourner sur la plupart des distributions
+            fichier: Ouinux-Linux
+          - os: macos-latest  # Mac à puce Apple (M1 et suivants)
+            fichier: Ouinux-macOS.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Linux : pas de pywebview (GTK ne s'embarque pas bien), l'app s'ouvre dans le navigateur
+      - run: pip install pyinstaller certifi ${{ runner.os != 'Linux' && '-r requirements.txt' || '' }}
+      - run: python main.py --diagnostic
+      - name: PyInstaller
+        shell: bash
+        run: |
+          SEP=$([ "$RUNNER_OS" = Windows ] && echo ";" || echo ":")
+          pyinstaller --noconfirm --windowed --name Ouinux \
+            $([ "$RUNNER_OS" = macOS ] || echo --onefile) \
+            --add-data "ouinux/web${SEP}ouinux/web" main.py
+          mkdir sortie
+          case "$RUNNER_OS" in
+            Windows) mv dist/Ouinux.exe "sortie/${{ matrix.fichier }}" ;;
+            Linux)   mv dist/Ouinux "sortie/${{ matrix.fichier }}" ;;
+            macOS)   ditto -c -k --keepParent dist/Ouinux.app "sortie/${{ matrix.fichier }}" ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.fichier }}
+          path: sortie/${{ matrix.fichier }}
+
+  publier:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: construire
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: sortie
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: sortie/*
+          generate_release_notes: true
