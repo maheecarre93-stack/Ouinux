@@ -36,7 +36,7 @@ Windows 11. Sous Linux, `--diagnostic` donne :
 
 ```powershell
 $exe = "$env:USERPROFILE\Downloads\Ouinux-Windows.exe"
-Invoke-WebRequest https://github.com/maheecarre93-stack/ouinux/releases/latest/download/Ouinux-Windows.exe -OutFile $exe
+Invoke-WebRequest https://github.com/maheecarre93-stack/Ouinux/releases/latest/download/Ouinux-Windows.exe -OutFile $exe
 Start-Process $exe
 ```
 
@@ -57,7 +57,7 @@ Vérifier, et noter chaque point (OK / problème + message exact) :
 
 ```powershell
 winget install -e --id Python.Python.3.12      # si `py -3.12 --version` échoue ; rouvrir PowerShell ensuite
-git clone https://github.com/maheecarre93-stack/ouinux C:\ouinux   # ou télécharger le zip de la branche main
+git clone https://github.com/maheecarre93-stack/Ouinux C:\ouinux   # ou télécharger le zip de la branche main
 cd C:\ouinux
 py -3.12 -m venv .venv-win
 .venv-win\Scripts\pip install -r requirements.txt
@@ -72,7 +72,7 @@ et proposer un correctif dans `ouinux/materiel.py` (fonction `_windows`).
 
 ### 3. La page de téléchargement
 
-Ouvrir https://maheecarre93-stack.github.io/ouinux/ dans Edge : le gros bouton doit dire « Download for Windows » ;
+Ouvrir https://maheecarre93-stack.github.io/Ouinux/ dans Edge : le gros bouton doit dire « Download for Windows » ;
 le lien macOS doit ouvrir l'avertissement « never been tested on a real Mac » avant de télécharger.
 
 ### 4. Facultatif
