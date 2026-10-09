@@ -44,6 +44,8 @@ Vérifier, et noter chaque point (OK / problème + message exact) :
 - SmartScreen / Defender : avertissement ? bloqué ? (attendu : avertissement « éditeur inconnu », pas de blocage)
 - temps avant l'ouverture de la fenêtre (un .exe PyInstaller « onefile » se décompresse : quelques secondes)
 - une **fenêtre** s'ouvre (pas le navigateur) ; pas de fenêtre console noire en plus
+- l'icône Ouinux (pingouin et balance, néon violet) apparaît sur le fichier dans l'Explorateur et dans la barre
+  des tâches (sources : `icone/ouinux.ico`, construit avec `--icon`)
 - l'en-tête affiche `🪟 Windows 11 · <processeur> · <carte graphique> · 16 Go RAM` (interface en français
   si Windows est en français)
 - analyser : **Elden Ring** (Linux, perfs + « Ton PC »), **Valorant** (Windows, anti-triche),

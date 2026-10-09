@@ -28,7 +28,7 @@ echo === Materiel detecte (copie aussi dans diagnostic.txt) ===
 type diagnostic.txt
 echo.
 
-.venv-win\Scripts\pyinstaller --noconfirm --clean --onefile --windowed --name Ouinux ^
+.venv-win\Scripts\pyinstaller --noconfirm --clean --onefile --windowed --name Ouinux --icon icone\ouinux.ico ^
     --add-data "ouinux\web;ouinux\web" main.py || goto erreur
 
 echo.

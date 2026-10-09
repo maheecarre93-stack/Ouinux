@@ -49,6 +49,9 @@ class Handler(BaseHTTPRequestHandler):
             if url.path in ("/", "/index.html"):
                 with open(os.path.join(WEB, "index.html"), "rb") as f:
                     self.envoyer(200, f.read(), "text/html")
+            elif url.path == "/icone.png":
+                with open(os.path.join(WEB, "icone.png"), "rb") as f:
+                    self.envoyer(200, f.read(), "image/png")
             elif url.path == "/api/ping":
                 Etat.dernier_ping = time.monotonic()
                 Etat.quitter_demande = None

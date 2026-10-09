@@ -33,7 +33,9 @@ jobs:
         shell: bash
         run: |
           SEP=$([ "$RUNNER_OS" = Windows ] && echo ";" || echo ":")
-          pyinstaller --noconfirm --windowed --name Ouinux \
+          # icône : .ico pour Windows, .icns pour macOS (un exécutable Linux n'en contient pas)
+          ICONE=$(case "$RUNNER_OS" in Windows) echo "--icon icone/ouinux.ico" ;; macOS) echo "--icon icone/ouinux.icns" ;; esac)
+          pyinstaller --noconfirm --windowed --name Ouinux $ICONE \
             $([ "$RUNNER_OS" = macOS ] || echo --onefile) \
             --add-data "ouinux/web${SEP}ouinux/web" main.py
           mkdir sortie
