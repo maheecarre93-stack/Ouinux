@@ -34,7 +34,10 @@ jobs:
         run: |
           SEP=$([ "$RUNNER_OS" = Windows ] && echo ";" || echo ":")
           # icône : .ico pour Windows, .icns pour macOS (un exécutable Linux n'en contient pas)
-          ICONE=$(case "$RUNNER_OS" in Windows) echo "--icon icone/ouinux.ico" ;; macOS) echo "--icon icone/ouinux.icns" ;; esac)
+          # (pas de « case » dans $( ) : le bash 3.2 des Mac de GitHub ne sait pas le lire)
+          ICONE=""
+          if [ "$RUNNER_OS" = Windows ]; then ICONE="--icon icone/ouinux.ico"; fi
+          if [ "$RUNNER_OS" = macOS ]; then ICONE="--icon icone/ouinux.icns"; fi
           pyinstaller --noconfirm --windowed --name Ouinux $ICONE \
             $([ "$RUNNER_OS" = macOS ] || echo --onefile) \
             --add-data "ouinux/web${SEP}ouinux/web" main.py
@@ -50,7 +53,8 @@ jobs:
           path: sortie/${{ matrix.fichier }}
 
   publier:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # publie ce qui a été construit, même si un système a échoué (le Mac n'est pas testé)
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
     needs: construire
     runs-on: ubuntu-latest
     permissions:
