@@ -423,7 +423,8 @@ def verdict_jeu(nom, appid=None, slug=None, lang="en"):
         r["anticheat"] = {"statut": ac["status"], "systemes": ac.get("anticheats", []),
                           "notes": [n[0] for n in ac.get("notes", [])][:3]}
     bloquees = [v["name"] for v in variantes if v["status"] in ("Denied", "Broken")]
-    if bloquees:
+    # inutile de le préciser si l'anti-triche du jeu lui-même bloque déjà Linux
+    if bloquees and not (ac and ac["status"] in ("Denied", "Broken")):
         r["raisons"].append(T(lang, "Third-party platforms blocked on Linux: {liste}. If you play through one of them, you'll need "
                                     "Windows.", liste=", ".join(bloquees[:5])))
 

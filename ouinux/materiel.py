@@ -49,7 +49,8 @@ GPU = {
 
 CPU = {
     # Intel
-    "core 2 quad": 18, "i3-2100": 30, "i5-2500": 45, "i7-2600": 48, "i3-3220": 35, "i5-3470": 50,
+    "core 2 quad": 18, "i5 750": 30, "i5-750": 30, "i5 760": 31, "i5-760": 31, "i7 860": 36, "i7-860": 36,
+    "i7 920": 35, "i7-920": 35, "i7 930": 36, "i7-930": 36, "i7 950": 37, "i7-950": 37, "i3-2100": 30, "i5-2500": 45, "i7-2600": 48, "i3-3220": 35, "i5-3470": 50,
     "i5-3570": 52, "i7-3770": 57, "i3-4130": 42, "i3-4160": 43, "i5-4460": 55, "i5-4590": 58, "i5-4670": 60,
     "i5-4690": 62, "i7-4770": 70, "i7-4790": 75, "i3-6100": 55, "i5-6400": 60, "i5-6500": 63, "i5-6600": 67,
     "i7-6700": 80, "i5-7400": 66, "i5-7500": 70, "i7-7700": 87, "i3-8100": 72, "i5-8400": 90, "i5-8600": 98,
@@ -268,6 +269,14 @@ def detecter():
 
 # ---------- Comparaison avec la config Steam du jeu ----------
 
+def _gpu_selon_vram(vram):
+    """Aucun modèle cité (ex. CS2 : « 1 GB, compatible DirectX 11 ») : niveau estimé d'après la mémoire vidéo demandée."""
+    if not vram:
+        return None
+    v = max(int(x) for x in vram)
+    return next((s for seuil, s in ((1, 12), (2, 22), (3, 32), (4, 42), (6, 58), (8, 80)) if v <= seuil), 100)
+
+
 def lire_config(html):
     """Extrait GPU / CPU / RAM / VRAM d'un bloc de configuration Steam."""
     t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html or ""))
@@ -282,7 +291,7 @@ def lire_config(html):
     return {
         "gpu_txt": gfx.strip()[:120], "cpu_txt": proc.strip()[:120],
         # les modèles listés sont censés être équivalents : on prend la moyenne
-        "gpu": round(sum(s for _, s in g) / len(g)) if g else None,
+        "gpu": round(sum(s for _, s in g) / len(g)) if g else _gpu_selon_vram(vram),
         "cpu": round(sum(s for _, s in c) / len(c)) if c else None,
         "ram": int(ram.group(1)) if ram else None,
         "vram": max(int(v) for v in vram) if vram else None,
