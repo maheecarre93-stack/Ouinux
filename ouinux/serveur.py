@@ -15,6 +15,7 @@ class Etat:
     pc = None
     pret = threading.Event()
     dernier_ping = None  # signe de vie de la page (pour s'arrêter quand elle est fermée)
+    debut = time.monotonic()
     quitter_demande = None
 
 
@@ -86,4 +87,6 @@ def page_fermee():
     now = time.monotonic()
     if Etat.quitter_demande and now - Etat.quitter_demande > 3:
         return True
-    return Etat.dernier_ping is not None and now - Etat.dernier_ping > 180
+    if Etat.dernier_ping is None:  # la page ne s'est jamais ouverte (navigateur introuvable…) : on n'attend pas indéfiniment
+        return now - Etat.debut > 120
+    return now - Etat.dernier_ping > 180

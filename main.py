@@ -5,11 +5,20 @@ Options :  --navigateur   ouvrir dans le navigateur au lieu d'une fenêtre
            --port N       port fixe (par défaut : un port libre au hasard)
            --diagnostic   afficher le matériel détecté (JSON) puis quitter
 """
+import os
 import sys
 import time
 import webbrowser
 
 from ouinux import serveur
+
+# Exécutable PyInstaller sous Linux : il impose ses propres bibliothèques (LD_LIBRARY_PATH) aux programmes
+# qu'il lance. Le navigateur, kde-open, vulkaninfo… doivent retrouver celles du système, sinon ils plantent.
+if getattr(sys, "frozen", False) and sys.platform.startswith("linux"):
+    if "LD_LIBRARY_PATH_ORIG" in os.environ:
+        os.environ["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
+    else:
+        os.environ.pop("LD_LIBRARY_PATH", None)
 
 
 def main():
