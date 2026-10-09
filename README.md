@@ -13,7 +13,7 @@ Dans la page **Releases** du dépôt, prendre le fichier de son système :
 | Système | Fichier | Lancement |
 |---|---|---|
 | Windows 10/11 | `Ouinux-Windows.exe` | double-clic. SmartScreen peut se méfier d'un programme non signé : « Informations complémentaires » → « Exécuter quand même ». |
-| Linux | `Ouinux-Linux.tar.gz` | extraire l'archive, puis double-clic sur `Ouinux`. S'ouvre dans le navigateur ; l'app s'arrête quand on ferme l'onglet. |
+| Linux | `Ouinux-Linux.zip` | dézipper, puis double-clic sur `Ouinux`. S'ouvre dans une fenêtre d'application si Chrome, Chromium, Brave, Edge ou Vivaldi est installé, sinon dans un onglet du navigateur ; l'app s'arrête quand on ferme la fenêtre. Au premier lancement, elle propose un raccourci avec son icône dans le menu des applications. |
 | macOS (puce Apple) | `Ouinux-macOS.zip` | dézipper, puis clic droit sur l'app → « Ouvrir » la première fois (app non signée). |
 
 L'interface est en français si le système l'est, en anglais sinon.

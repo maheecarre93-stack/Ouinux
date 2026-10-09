@@ -6,7 +6,7 @@ import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import analyse, materiel
+from . import analyse, bureau, materiel, prefs
 
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
@@ -41,6 +41,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/quitter":  # onglet fermé (ou rechargé : le ping suivant annule l'arrêt)
             Etat.quitter_demande = time.monotonic()
+        elif self.path in ("/api/langue?l=fr", "/api/langue?l=en"):
+            try:
+                prefs.ecrire(langue=self.path[-2:])
+            except OSError:
+                pass  # pas mémorisée, mais la page change quand même de langue
+        elif self.path in ("/api/raccourci?ajouter=1", "/api/raccourci?ajouter=0"):
+            try:
+                self.envoyer(200, {"raccourci": bureau.repondre_raccourci(self.path.endswith("1"))})
+            except OSError as e:
+                self.envoyer(500, {"erreur": str(e)})
+            return
         self.envoyer(204, b"")
 
     def do_GET(self):
@@ -48,8 +59,10 @@ class Handler(BaseHTTPRequestHandler):
         p = {k: v[0] for k, v in urllib.parse.parse_qs(url.query).items()}
         try:
             if url.path in ("/", "/index.html"):
-                with open(os.path.join(WEB, "index.html"), "rb") as f:
-                    self.envoyer(200, f.read(), "text/html")
+                with open(os.path.join(WEB, "index.html"), encoding="utf-8") as f:
+                    langue = prefs.lire().get("langue")  # choisie avec le bouton FR/EN ; sinon celle du système
+                    page = f.read().replace("const LANGUE_CHOISIE = null;", f"const LANGUE_CHOISIE = {json.dumps(langue)};")
+                    self.envoyer(200, page.encode(), "text/html")
             elif url.path == "/icone.png":
                 with open(os.path.join(WEB, "icone.png"), "rb") as f:
                     self.envoyer(200, f.read(), "image/png")
@@ -59,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.envoyer(200, {})
             elif url.path == "/api/pc":
                 Etat.pret.wait(20)
-                self.envoyer(200, {**(Etat.pc or {}), "version": analyse.VERSION})
+                self.envoyer(200, {**(Etat.pc or {}), "version": analyse.VERSION, "raccourci": bureau.etat_raccourci()})
             elif url.path == "/api/suggestions":
                 self.envoyer(200, analyse.suggestions(p.get("q", ""), p.get("lang", "en")))
             elif url.path == "/api/analyse":

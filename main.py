@@ -10,7 +10,7 @@ import sys
 import time
 import webbrowser
 
-from ouinux import serveur
+from ouinux import bureau, serveur
 
 # Exécutable PyInstaller sous Linux : il impose ses propres bibliothèques (LD_LIBRARY_PATH) aux programmes
 # qu'il lance. Le navigateur, kde-open, vulkaninfo… doivent retrouver celles du système, sinon ils plantent.
@@ -40,8 +40,10 @@ def main():
             return
         except Exception as e:  # pas de moteur web disponible : on se rabat sur le navigateur
             print(f"No window available ({e}), opening in the browser.", file=sys.stderr)
-    print(f"Ouinux: {url}  (close the tab or press Ctrl+C to quit)")
-    webbrowser.open(url)
+    print(f"Ouinux: {url}  (close the window or press Ctrl+C to quit)")
+    # Linux : fenêtre d'application Chromium si possible, sinon un onglet du navigateur par défaut
+    if "--navigateur" in sys.argv or not sys.platform.startswith("linux") or not bureau.ouvrir_fenetre(url):
+        webbrowser.open(url)
     try:
         while not serveur.page_fermee():
             time.sleep(1)

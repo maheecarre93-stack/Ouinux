@@ -16,7 +16,7 @@ import urllib.request
 from . import materiel
 from .langues import T
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 
 def dossier_cache():

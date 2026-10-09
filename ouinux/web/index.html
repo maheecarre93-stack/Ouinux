@@ -25,6 +25,7 @@
   header { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
   header h1 { font-size: 17px; margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
   header h1 .logo { width: 24px; height: 24px; border-radius: 6px; }
+  #langue { margin-left: auto; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; }
   #pc { color: var(--muted); font-size: 13px; min-height: 20px; }
   .recherche { position: relative; max-width: 760px; margin: 12px auto 0; }
   #q { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
@@ -48,6 +49,11 @@
   button:disabled { opacity: .5; cursor: default; }
   .attente { color: var(--muted); font-style: italic; text-align: center; }
   .erreur { color: #d64545; text-align: center; }
+  .bandeau { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--panel);
+             border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+  .bandeau img { width: 28px; height: 28px; border-radius: 7px; }
+  .bandeau span { flex: 1; min-width: 180px; }
+  .bandeau button { padding: 4px 12px; font-size: 13px; }
   .carte { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
            border-left: 4px solid var(--c); position: relative; }
   .carte .banniere { width: 100%; aspect-ratio: 460 / 215; object-fit: cover; display: block; max-height: 150px; }
@@ -95,7 +101,8 @@
 <body>
 <header>
   <div class="col" style="gap:0">
-    <h1><img class="logo" src="/icone.png" alt="">Ouinux</h1>
+    <h1><img class="logo" src="/icone.png" alt="">Ouinux
+      <button id="langue" type="button" title="Language / Langue"></button></h1>
     <div id="pc" data-t>Detecting your PC…</div>
   </div>
   <div class="recherche">
@@ -127,6 +134,9 @@ const LANGUES = { fr: {
   'Data: ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimates, not measurements':
     'Données : ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimations, pas des mesures',
   'Hardware not detected': 'Matériel non détecté',
+  'Add Ouinux to your applications menu, with its icon?': 'Ajouter Ouinux au menu des applications, avec son icône ?',
+  'Add': 'Ajouter', 'No thanks': 'Non merci',
+  '✅ Ouinux is now in your applications menu.': '✅ Ouinux est maintenant dans le menu des applications.',
   '{nom}: {texte}': '{nom} : {texte}',
   'Unknown processor': 'Processeur inconnu', 'Unknown graphics card': 'Carte graphique inconnue',
   'Checking {nom}: anti-cheat, ProtonDB, Steam requirements…': 'Je vérifie {nom} : anti-triche, ProtonDB, configuration Steam…',
@@ -155,8 +165,9 @@ const LANGUES = { fr: {
   '🛒 Available on: ': '🛒 Disponible sur : ',
   'View on Lutris ↗': 'Voir sur Lutris ↗', 'View on ProtonDB ↗': 'Voir sur ProtonDB ↗',
 } };
-const LANG = (navigator.language || 'en').slice(0, 2).toLowerCase() in LANGUES
-  ? (navigator.language || 'en').slice(0, 2).toLowerCase() : 'en';
+const LANGUE_CHOISIE = null;  // remplacée par le serveur quand l'utilisateur a choisi avec le bouton FR/EN
+const LANGUE_SYSTEME = (navigator.language || 'en').slice(0, 2).toLowerCase();
+const LANG = LANGUE_CHOISIE || (LANGUE_SYSTEME in LANGUES ? LANGUE_SYSTEME : 'en');
 function t(texte, valeurs = {}) {
   const tr = (LANGUES[LANG] || {})[texte] ?? texte;
   return tr.replace(/\{(\w+)\}/g, (m, k) => k in valeurs ? valeurs[k] : m);
@@ -165,6 +176,14 @@ document.documentElement.lang = LANG;
 document.querySelectorAll('[data-t]').forEach(e => { e.textContent = t(e.textContent.trim()); });
 document.querySelectorAll('[data-t-placeholder]').forEach(e => { e.placeholder = t(e.placeholder); });
 
+// Bouton de langue : affiche l'autre langue, la mémorise, recharge la page
+const bLangue = document.getElementById('langue');
+bLangue.textContent = LANG === 'fr' ? 'EN' : 'FR';
+bLangue.onclick = async () => {
+  await fetch('/api/langue?l=' + (LANG === 'fr' ? 'en' : 'fr'), { method: 'POST' }).catch(() => {});
+  location.reload();
+};
+
 function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
 
 fetch('/api/pc').then(r => r.json()).then(pc => {
@@ -172,7 +191,28 @@ fetch('/api/pc').then(r => r.json()).then(pc => {
   const ram = pc.ram_go ? ` · ${pc.ram_go} ${LANG === 'fr' ? 'Go' : 'GB'} RAM` : '';
   document.getElementById('pc').textContent = `${{ windows: '🪟', macos: '🍎' }[pc.os] || '🐧'} ${pc.os_nom} · ${t(pc.cpu)} · ${t(pc.gpu)}${ram}`;
   document.getElementById('pied').textContent += ` · v${pc.version}`;
+  if (pc.raccourci === 'absent') proposerRaccourci();
 }).catch(() => { document.getElementById('pc').textContent = t('Hardware not detected'); });
+
+// Linux : proposer un raccourci dans le menu des applications (une seule fois)
+function proposerRaccourci() {
+  const b = el('div', 'bandeau'), im = el('img'); im.src = '/icone.png'; im.alt = '';
+  const oui = el('button', null, t('Add')), non = el('button', null, t('No thanks'));
+  b.append(im, el('span', null, t('Add Ouinux to your applications menu, with its icon?')), oui, non);
+  const repondre = async ajouter => {
+    try {
+      const r = await (await fetch('/api/raccourci?ajouter=' + (ajouter ? 1 : 0), { method: 'POST' })).json();
+      if (ajouter && r.raccourci === 'present') {
+        b.replaceChildren(el('span', null, t('✅ Ouinux is now in your applications menu.')));
+        setTimeout(() => b.remove(), 4000);
+        return;
+      }
+    } catch { /* tant pis : on reproposera au prochain lancement */ }
+    b.remove();
+  };
+  oui.onclick = () => repondre(true); non.onclick = () => repondre(false);
+  col.prepend(b);
+}
 
 // ---------- Recherche avec suggestions ----------
 function fermerListe() { liste.classList.remove('ouverte'); actif = -1; }

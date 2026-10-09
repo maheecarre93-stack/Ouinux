@@ -17,7 +17,7 @@ jobs:
           - os: windows-latest
             fichier: Ouinux-Windows.exe
           - os: ubuntu-22.04  # glibc assez ancienne pour tourner sur la plupart des distributions
-            fichier: Ouinux-Linux.tar.gz
+            fichier: Ouinux-Linux.zip
           - os: macos-latest  # Mac à puce Apple (M1 et suivants)
             fichier: Ouinux-macOS.zip
     runs-on: ${{ matrix.os }}
@@ -45,7 +45,7 @@ jobs:
           case "$RUNNER_OS" in
             Windows) mv dist/Ouinux.exe "sortie/${{ matrix.fichier }}" ;;
             # archive : elle garde le droit d'exécution, qu'un fichier téléchargé seul n'a jamais
-            Linux)   tar -czf "sortie/${{ matrix.fichier }}" -C dist Ouinux ;;
+            Linux)   (cd dist && zip -q -X "../sortie/${{ matrix.fichier }}" Ouinux) ;;
             macOS)   ditto -c -k --keepParent dist/Ouinux.app "sortie/${{ matrix.fichier }}" ;;
           esac
       - uses: actions/upload-artifact@v4
