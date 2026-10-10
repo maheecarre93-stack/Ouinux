@@ -185,9 +185,12 @@ const LANGUES = { fr: {
   'Data: ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimates, not measurements':
     'Données : ProtonDB, AreWeAntiCheatYet, Steam, Lutris, PCGamingWiki · estimations, pas des mesures',
   'Hardware not detected': 'Matériel non détecté',
-  'Add Ouinux to your applications menu, with its icon?': 'Ajouter Ouinux au menu des applications, avec son icône ?',
-  'Add': 'Ajouter', 'No thanks': 'Non merci',
-  '✅ Ouinux is now in your applications menu.': '✅ Ouinux est maintenant dans le menu des applications.',
+  'Install Ouinux: applications menu and desktop icon?': 'Installer Ouinux : menu des applications et icône sur le Bureau ?',
+  'Install': 'Installer', 'No thanks': 'Non merci',
+  "✅ Ouinux is installed: it's in your applications menu and on your desktop. You can delete the file you downloaded.":
+    '✅ Ouinux est installé : il est dans le menu des applications et sur le Bureau. Tu peux supprimer le fichier téléchargé.',
+  '✅ Ouinux is up to date (applications menu and desktop). You can delete the file you downloaded.':
+    '✅ Ouinux est à jour (menu des applications et Bureau). Tu peux supprimer le fichier téléchargé.',
   '{nom}: {texte}': '{nom} : {texte}',
   'Unknown processor': 'Processeur inconnu', 'Unknown graphics card': 'Carte graphique inconnue',
   'Checking {nom}: anti-cheat, ProtonDB, Steam requirements…': 'Je vérifie {nom} : anti-triche, ProtonDB, configuration Steam…',
@@ -260,19 +263,24 @@ fetch('/api/pc').then(r => r.json()).then(pc => {
   document.getElementById('pc').textContent = `${{ windows: '🪟', macos: '🍎' }[pc.os] || '🐧'} ${pc.os_nom} · ${t(pc.cpu)} · ${t(pc.gpu)}${ram}`;
   document.getElementById('pied').textContent += ` · v${pc.version}`;
   if (pc.raccourci === 'absent') proposerRaccourci();
+  if (pc.raccourci === 'present' && pc.copie) {  // version téléchargée lancée : elle vient de remplacer la copie installée
+    const b = el('div', 'bandeau');
+    b.append(el('span', null, t('✅ Ouinux is up to date (applications menu and desktop). You can delete the file you downloaded.')));
+    col.prepend(b); setTimeout(() => b.remove(), 9000);
+  }
 }).catch(() => { document.getElementById('pc').textContent = t('Hardware not detected'); });
 
 // Linux : proposer un raccourci dans le menu des applications (une seule fois)
 function proposerRaccourci() {
   const b = el('div', 'bandeau'), im = el('img'); im.src = '/icone.svg'; im.alt = '';
-  const oui = el('button', 'principal', t('Add')), non = el('button', null, t('No thanks'));
-  b.append(im, el('span', null, t('Add Ouinux to your applications menu, with its icon?')), oui, non);
+  const oui = el('button', 'principal', t('Install')), non = el('button', null, t('No thanks'));
+  b.append(im, el('span', null, t('Install Ouinux: applications menu and desktop icon?')), oui, non);
   const repondre = async ajouter => {
     try {
       const r = await (await fetch('/api/raccourci?ajouter=' + (ajouter ? 1 : 0), { method: 'POST' })).json();
       if (ajouter && r.raccourci === 'present') {
-        b.replaceChildren(el('span', null, t('✅ Ouinux is now in your applications menu.')));
-        setTimeout(() => b.remove(), 4000);
+        b.replaceChildren(el('span', null, t("✅ Ouinux is installed: it's in your applications menu and on your desktop. You can delete the file you downloaded.")));
+        setTimeout(() => b.remove(), 9000);
         return;
       }
     } catch { /* tant pis : on reproposera au prochain lancement */ }

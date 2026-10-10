@@ -72,7 +72,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.envoyer(200, {})
             elif url.path == "/api/pc":
                 Etat.pret.wait(20)
-                self.envoyer(200, {**(Etat.pc or {}), "version": analyse.VERSION, "raccourci": bureau.etat_raccourci()})
+                self.envoyer(200, {**(Etat.pc or {}), "version": analyse.VERSION, "raccourci": bureau.etat_raccourci(),
+                                   "copie": bureau.copie_faite})
             elif url.path == "/api/suggestions":
                 self.envoyer(200, analyse.suggestions(p.get("q", ""), p.get("lang", "en")))
             elif url.path == "/api/analyse":

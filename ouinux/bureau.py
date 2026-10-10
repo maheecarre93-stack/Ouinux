@@ -50,34 +50,70 @@ def ouvrir_fenetre(url):
         return False
 
 
-# ---------- Raccourci dans le menu des applications ----------
+# ---------- Installation : copie du programme, menu des applications, lanceur sur le Bureau ----------
+# Un exécutable Linux ne peut pas porter d'icône : sur le Bureau ou dans Dolphin il garde l'icône générique.
+# Seuls les lanceurs .desktop en ont une. On installe donc une copie du programme à un endroit fixe,
+# et ce sont les lanceurs (menu + Bureau) qui pointent vers elle.
+
+INSTALLE = os.path.join(DONNEES, "ouinux", "Ouinux")
+copie_faite = False  # vrai si ce lancement vient d'installer ou de mettre à jour la copie
+
+
+def _dossier_bureau():
+    """Dossier du Bureau (« Bureau », « Desktop »… selon la langue), d'après user-dirs.dirs."""
+    config = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    try:
+        with open(os.path.join(config, "user-dirs.dirs")) as f:
+            for ligne in f:
+                if ligne.startswith("XDG_DESKTOP_DIR="):
+                    return ligne.split("=", 1)[1].strip().strip('"').replace("$HOME", os.path.expanduser("~"))
+    except OSError:
+        pass
+    return os.path.expanduser("~/Desktop")
+
+
+def _lanceur_bureau():
+    return os.path.join(_dossier_bureau(), "ouinux.desktop")
+
 
 def etat_raccourci():
     """None hors exécutable Linux ; sinon « present », « refuse » ou « absent » (à proposer)."""
     if not (getattr(sys, "frozen", False) and sys.platform.startswith("linux")):
         return None
     if os.path.exists(RACCOURCI):
-        _ecrire_raccourci()  # l'exécutable a pu être déplacé : on remet le chemin à jour
+        # déjà installé : si on lance un autre fichier (une version téléchargée), il remplace la copie installée
+        _installer(bureau=os.path.realpath(sys.executable) != os.path.realpath(INSTALLE))
         return "present"
     return "refuse" if prefs.lire().get("raccourci") == "refuse" else "absent"
 
 
-def _ecrire_raccourci():
-    os.makedirs(os.path.dirname(ICONE), exist_ok=True)
-    os.makedirs(os.path.dirname(RACCOURCI), exist_ok=True)
+def _installer(bureau):
+    global copie_faite
+    os.makedirs(os.path.dirname(INSTALLE), exist_ok=True)
+    if os.path.realpath(sys.executable) != os.path.realpath(INSTALLE):
+        # fichier temporaire puis renommage : fonctionne même si l'ancienne copie est en cours d'exécution
+        shutil.copyfile(sys.executable, INSTALLE + ".nouveau")
+        os.chmod(INSTALLE + ".nouveau", 0o755)
+        os.replace(INSTALLE + ".nouveau", INSTALLE)
+        copie_faite = True
     shutil.copyfile(os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "icone.png"), ICONE)
-    exe = sys.executable.replace("\\", "\\\\").replace('"', '\\"')
-    with open(RACCOURCI, "w") as f:
-        f.write("[Desktop Entry]\nType=Application\nName=Ouinux\n"
-                "Comment=Will your games run on Linux?\nComment[fr]=Ce jeu tourne-t-il sous Linux ?\n"
-                f'Exec="{exe}"\nIcon={ICONE}\nTerminal=false\nCategories=Game;Utility;\n'
-                "StartupWMClass=Ouinux\n")
-    os.chmod(RACCOURCI, 0o755)
+    exe = INSTALLE.replace("\\", "\\\\").replace('"', '\\"')
+    contenu = ("[Desktop Entry]\nType=Application\nName=Ouinux\n"
+               "Comment=Will your games run on Linux?\nComment[fr]=Ce jeu tourne-t-il sous Linux ?\n"
+               f'Exec="{exe}"\nIcon={ICONE}\nTerminal=false\nCategories=Game;Utility;\n'
+               "StartupWMClass=Ouinux\n")
+    lanceurs = [RACCOURCI] + ([_lanceur_bureau()] if bureau or os.path.exists(_lanceur_bureau()) else [])
+    for chemin in lanceurs:
+        if os.path.isdir(os.path.dirname(chemin)) or chemin == RACCOURCI:
+            os.makedirs(os.path.dirname(chemin), exist_ok=True)
+            with open(chemin, "w") as f:
+                f.write(contenu)
+            os.chmod(chemin, 0o755)  # KDE n'affiche (et ne lance) un lanceur du Bureau que s'il est exécutable
 
 
 def repondre_raccourci(ajouter):
     if ajouter:
-        _ecrire_raccourci()
+        _installer(bureau=True)
         return "present"
     prefs.ecrire(raccourci="refuse")
     return "refuse"
