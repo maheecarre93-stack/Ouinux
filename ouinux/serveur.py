@@ -63,9 +63,9 @@ class Handler(BaseHTTPRequestHandler):
                     langue = prefs.lire().get("langue")  # choisie avec le bouton FR/EN ; sinon celle du système
                     page = f.read().replace("const LANGUE_CHOISIE = null;", f"const LANGUE_CHOISIE = {json.dumps(langue)};")
                     self.envoyer(200, page.encode(), "text/html")
-            elif url.path == "/icone.png":
-                with open(os.path.join(WEB, "icone.png"), "rb") as f:
-                    self.envoyer(200, f.read(), "image/png")
+            elif url.path in ("/icone.png", "/icone.svg"):
+                with open(os.path.join(WEB, url.path[1:]), "rb") as f:
+                    self.envoyer(200, f.read(), "image/svg+xml" if url.path.endswith("svg") else "image/png")
             elif url.path == "/api/ping":
                 Etat.dernier_ping = time.monotonic()
                 Etat.quitter_demande = None
