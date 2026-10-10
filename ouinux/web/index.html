@@ -27,8 +27,9 @@
   .fond svg { width: 100%; height: 100%; }
   ::selection { background: rgba(139, 92, 246, .45); }
 
+  /* au-dessus des fiches (leur flou crée aussi une couche) : sinon elles recouvrent la liste des suggestions */
   header { padding: 14px 18px 14px; border-bottom: 1px solid var(--contour); background: rgba(14, 11, 22, .72);
-           backdrop-filter: blur(10px); }
+           backdrop-filter: blur(10px); position: relative; z-index: 20; }
   header h1 { font-size: 20px; margin: 0 0 2px; display: flex; align-items: center; gap: 9px; letter-spacing: -.01em; }
   header h1 .logo { width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 0 14px rgba(139, 92, 246, .45); }
   header h1 .nom { font-weight: 800; background: linear-gradient(90deg, var(--violet), #c084fc 50%, var(--rose));
@@ -238,7 +239,7 @@ bLangue.onclick = async () => {
 const MOTS_CLES = ['ProtonDB', 'Proton', 'Steam Deck', 'Lutris', 'Heroic Games Launcher', 'Wine', 'anti-cheat', 'anti-triche',
   'Vulkan', 'DirectX 12', 'DirectX 11', 'VKD3D', 'DXVK', 'OpenGL', 'Mesa', 'ray tracing', 'Platinum', 'Gold', 'Silver',
   'Bronze', 'Borked', 'native Linux version', 'version Linux native', 'Linux native', 'Vanguard', 'EasyAntiCheat',
-  'BattlEye', 'FACEIT', 'EA App', 'Battle.net', 'Epic'].sort((a, b) => b.length - a.length);
+  'BattlEye', 'FACEIT', 'Easy Anti-Cheat', 'EA App', 'Battle.net', 'Epic'].sort((a, b) => b.length - a.length);
 const RE_MOTS = new RegExp('(?<![\\p{L}\\d])(' + MOTS_CLES.map(m => m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
   + ')(?![\\p{L}\\d])', 'giu');
 function elk(tag, cls, txt) {  // comme el(), avec les mots clés en valeur (texte inséré sans HTML)
