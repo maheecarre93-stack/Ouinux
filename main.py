@@ -36,8 +36,11 @@ def main():
             import webview
             webview.create_window("Ouinux", url, width=560, height=820, min_size=(380, 520))
             # Linux : GTK + WebKit (présent sur presque tous les bureaux) ; Windows : Edge WebView2 par défaut
-            # icône de la fenêtre (barre de titre) : sinon celle, par défaut, de pywebview
-            icone = os.path.join(os.path.dirname(os.path.abspath(serveur.__file__)), "web", "icone.png")
+            # icône de la fenêtre (barre de titre) : sinon celle, par défaut, de pywebview.
+            # Pas sous Windows : WinForms n'accepte qu'un .ico (un PNG fait planter l'app au démarrage,
+            # hors de ce try) et reprend tout seul l'icône intégrée au .exe.
+            icone = None if sys.platform == "win32" else \
+                os.path.join(os.path.dirname(os.path.abspath(serveur.__file__)), "web", "icone.png")
             webview.start(gui="gtk" if sys.platform.startswith("linux") else None, icon=icone)
             return
         except Exception as e:  # pas de moteur web disponible : on se rabat sur le navigateur
